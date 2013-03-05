@@ -313,6 +313,7 @@ describe Chef::Knife::Ec2ServerCreate do
       @new_ec2_server.stub!(
         :dns_name => 'public_name',
         :private_ip_address => 'private_ip',
+        :public_ip_address => nil,
         :custom => 'custom'
       )
       @knife_ec2_create.stub!(:server => @new_ec2_server)
@@ -325,11 +326,22 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     describe "with vpc_mode?" do
-      it 'should use private ip' do
+      it 'should use private ip if the machine does not have a public_ip' do
         @knife_ec2_create.stub!(:vpc_mode? => true)
         @knife_ec2_create.ssh_connect_host.should == 'private_ip'
       end
 
+      it 'should use public_ip if it has one' do
+        @public_facing_ec2_vpc_server.stub!(
+            :private_ip_address => 'private_ip',
+            :public_ip_address => 'public_ip',
+        )
+        @knife_ec2_create.stub!(:server => @public_facing_ec2_vpc_server)
+
+
+        @knife_ec2_create.stub!(:vpc_mode? => true)
+        @knife_ec2_create.ssh_connect_host.should == 'public_ip'
+      end
     end
 
     describe "with custom server attribute" do
